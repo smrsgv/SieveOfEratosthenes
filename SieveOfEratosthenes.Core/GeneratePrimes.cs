@@ -1,104 +1,89 @@
 namespace SieveOfEratosthenes.Core;
 
-/// <remark>
+///<remark>
 /// This class Generates prime numbers up to a user specified
 /// maximum. The algorithm used is the Sieve of Eratosthenes.
-///
-/// Eratosthenes of Cyrene, b. c. 276 BC, Cyrene, Libya --
-/// d. c. 194, Alexandria. The first man to calculate the
-/// circumference of the Earth. Also known for working on
-/// calendars with leap years and ran the library at
-/// Alexandria.
-///
-/// The algorithm is quite simple. Given an array of integers
-/// starting at 2. Cross out all multiples of 2. Find the
-/// next uncrossed integer, and cross out all of its multiples.
-/// Repeat until you have passed the square root of the
-/// maximum value.
-///
-/// Written by Robert C. Martin on 9 Dec 1999 in Java
-/// Translated to C# by Micah Martin on 12 Jan 2005.
+/// Given an array of integers starting at 2:
+/// Find the first uncrossed integer, and cross out all its
+/// multiples. Repeat until there are no more multiples
+/// in the array.
 ///</remark>
-
-
-/// <summary>
-/// author: Robert C. Martin
-/// </summary>
-public class GeneratePrimes
+public class PrimeGenerator
 {
-  private static int s;
-  private static bool[] f;
-  private static int[] primes;
-  ///<summary>
-  /// Generates an array of prime numbers.
-  ///</summary>
-  ///
-  /// <param name="maxValue">The generation limit.</param>
-  public static int[] GeneratePrimeNumbers(int maxValue)
-  {
-    if (maxValue >= 2) // the only valid case
-    {
-      InitializeSieve(maxValue);
-      Sieve();
-      LoadPrimes();
+    private static bool[] _crossedOut;
+    private static int[] _result;
 
-      return primes;
+    public static int[] GeneratePrimeNumbers(int maxValue)
+    {
+        if (maxValue < 2)
+            return Array.Empty<int>();
+        
+        UncrossIntegersUpTo(maxValue);
+        CrossOutMultiples();
+        PutUncrossedIntegersIntoResult();
+        
+        return _result;
     }
 
-    // maxValue < 2
-    return Array.Empty<int>(); // return null array if bad input.
-  }
-
-  private static void LoadPrimes()
-  {
-    int j;
-    int i;
-
-    // how many primes are there?
-    int count = 0;
-    for (i = 0; i < s; i++)
+    private static void UncrossIntegersUpTo(int maxValue)
     {
-      if (f[i])
-        count++; // bump count.
+        _crossedOut = new bool[maxValue + 1];
+        for (int i = 2; i < _crossedOut.Length; i++)
+            _crossedOut[i] = false;
     }
 
-    primes = new int[count];
-
-    // move the primes into the result
-    for (i = 0, j = 0; i < s; i++)
+    private static void PutUncrossedIntegersIntoResult()
     {
-      if (f[i]) // if prime
-        primes[j++] = i;
+        _result = new int[NumberOfUncrossedIntegers()];
+        for (int j = 0, i = 2; i < _crossedOut.Length; i++)
+        {
+            if (NotCrossed(i))
+                _result[j++] = i;
+        }
     }
-  }
 
-  private static void Sieve()
-  {
-    // sieve
-    int i;
-    int j;
-    for (i = 2; i < Math.Sqrt(s) + 1; i++)
+    private static int NumberOfUncrossedIntegers()
     {
-      if (f[i]) // if i is uncrossed, cross its multiples.
-      {
-        for (j = 2 * i; j < s; j += i)
-          f[j] = false; // multiple is not prime
-      }
+        int count = 0;
+        for (int i = 2; i < _crossedOut.Length; i++)
+        {
+            if (NotCrossed(i))
+                count++; // bump count.
+        }
+
+        return count;
     }
-  }
 
-  private static void InitializeSieve(int maxValue)
-  {
-    // declarations
-    s = maxValue + 1;
-    f = new bool[s];
-    int i;
+    private static void CrossOutMultiples()
+    {
+        int limit = DetermineIterationLimit();
+        for (int i = 2; i <= limit; i++)
+        {
+            if (NotCrossed(i))
+                CrossOutputMultiplesOf(i);
+        }
+    }
 
-    // initialize array to true.
-    for (i = 0; i < s; i++)
-      f[i] = true;
+    private static int DetermineIterationLimit()
+    {
+        // Every multiple in the array has a prime factor that
+        // is less than or equal to the root of the array size,
+        // so we don't have to cross off multiples of numbers
+        // larger than that root.
+        double iterationLimit = Math.Sqrt(_crossedOut.Length);
+        return (int)iterationLimit;
+    }
 
-    // get rid of known non-primes
-    f[0] = f[1] = false;
-  }
+    private static void CrossOutputMultiplesOf(int i)
+    {
+        for (int multiple = 2 * i;
+             multiple < _crossedOut.Length;
+             multiple += i)
+            _crossedOut[multiple] = true;
+    }
+
+    private static bool NotCrossed(int i)
+    {
+        return _crossedOut[i] == false;
+    }
 }
